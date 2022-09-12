@@ -27,3 +27,4 @@ firstThunk->u1.Function = (uint64_t)hookfunction;
 
 As you can see, when notepad calls `TranslateMessage` (pretty much all the time) it will run our hook function which ends up displaying a message box !
 
+![image](https://cdn.discordapp.com/attachments/780153367305256981/1018961690416656504/demo_iat.gif)
