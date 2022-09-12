@@ -1,16 +1,14 @@
 #include <Windows.h>
 #include <stdint.h>
-#include <stdio.h>
 
 void hookfunction()
 {
 	MessageBoxA(0, "Hello from hook !", "Hooked", 0);
 }
 
-void HookIAT()
+void HookIAT(const char* routine_name)
 {
 	uint64_t process_base = (uint64_t)GetModuleHandleA(0);
-	uint64_t routine = (uint64_t)GetProcAddress(GetModuleHandleA("USER32.dll"), "TranslateMessage");
 	
 	PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)process_base;
 	PIMAGE_NT_HEADERS nt_header = (PIMAGE_NT_HEADERS)(process_base + dos_header->e_lfanew);
@@ -23,9 +21,9 @@ void HookIAT()
 		
 		while (original_first_thunk->u1.AddressOfData)
 		{
-			PIMAGE_IMPORT_BY_NAME functionName = (PIMAGE_IMPORT_BY_NAME)(process_base + original_first_thunk->u1.AddressOfData );
+			PIMAGE_IMPORT_BY_NAME function_name = (PIMAGE_IMPORT_BY_NAME)(process_base + original_first_thunk->u1.AddressOfData );
 
-			if (firstThunk->u1.Function == routine)
+			if (!strcmp(routine_name, function_name->Name))
 			{
 				DWORD old_protection, changed_protection;
 				VirtualProtect(&firstThunk->u1.Function, sizeof(uint64_t), PAGE_READWRITE, &old_protection);
@@ -45,7 +43,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH)
     {
-		HookIAT();
+		HookIAT("TranslateMessage");
         return 1;
     }
     return 1;
